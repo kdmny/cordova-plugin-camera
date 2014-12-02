@@ -117,6 +117,11 @@ static NSString* toBase64(NSData* data) {
     return [(NSNumber*)useGeo boolValue];
 }
 
+-(void)cancel:(CDVInvokedUrlCommand*)command
+{
+    [self imagePickerControllerDidCancel:self.pickerController];
+}
+
 - (BOOL)popoverSupported
 {
     return (NSClassFromString(@"UIPopoverController") != nil) &&
@@ -125,6 +130,13 @@ static NSString* toBase64(NSData* data) {
 
 - (void)takePicture:(CDVInvokedUrlCommand*)command
 {
+    if(self.pickerController != NULL){
+        [self imagePickerControllerDidCancel:self.pickerController];
+    }
+
+    // NSString* callbackId = command.callbackId;
+    // NSArray* arguments = command.arguments;
+
     self.hasPendingOperation = YES;
     
     __weak CDVCamera* weakSelf = self;
@@ -165,8 +177,12 @@ static NSString* toBase64(NSData* data) {
             }
             [weakSelf displayPopover:pictureOptions.popoverOptions];
             weakSelf.hasPendingOperation = NO;
-
         } else {
+            cameraPicker.showsCameraControls = NO;
+            cameraPicker.view.backgroundColor = [UIColor clearColor];
+            animate = NO;
+            self.viewController.modalPresentationStyle = UIModalPresentationCurrentContext;
+
             [weakSelf.viewController presentViewController:cameraPicker animated:YES completion:^{
                 weakSelf.hasPendingOperation = NO;
             }];
@@ -222,10 +238,14 @@ static NSString* toBase64(NSData* data) {
 - (void)navigationController:(UINavigationController *)navigationController willShowViewController:(UIViewController *)viewController animated:(BOOL)animated
 {
     if([navigationController isKindOfClass:[UIImagePickerController class]]){
-        UIImagePickerController* cameraPicker = (UIImagePickerController*)navigationController;
-        
-        if(![cameraPicker.mediaTypes containsObject:(NSString*)kUTTypeImage]){
+        UIImagePickerController * cameraPicker = (UIImagePickerController*)navigationController;
+        CGRect screenFrame = [[UIScreen mainScreen] bounds];
+        //if we hide the controls, expect somebody else to put them in so make this a small viewport.
+        if(![cameraPicker.mediaTypes containsObject:(NSString*) kUTTypeImage]){
             [viewController.navigationItem setTitle:NSLocalizedString(@"Videos title", nil)];
+        }
+        if(cameraPicker.sourceType == UIImagePickerControllerSourceTypeCamera){
+            cameraPicker.view.frame = CGRectMake(0, 60, screenFrame.size.width, screenFrame.size.width);
         }
     }
 }
@@ -579,7 +599,7 @@ static NSString* toBase64(NSData* data) {
     CDVPluginResult* result = nil;
     
     if (self.metadata) {
-        CGImageSourceRef sourceImage = CGImageSourceCreateWithData((__bridge CFDataRef)self.data, NULL);
+        CGImageSourceRef sourceImage = CGImageSourceCreateWithData((__bridge_retained CFDataRef)self.data, NULL);
         CFStringRef sourceType = CGImageSourceGetType(sourceImage);
         
         CGImageDestinationRef destinationImage = CGImageDestinationCreateWithData((__bridge CFMutableDataRef)self.data, sourceType, 1, NULL);

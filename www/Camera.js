@@ -72,4 +72,7 @@ cameraExport.cleanup = function(successCallback, errorCallback) {
     exec(successCallback, errorCallback, "Camera", "cleanup", []);
 };
 
+cameraExport.cancel = function(successCallback, errorCallback) {
+    exec(successCallback, errorCallback, "Camera", "cancel", []);
+};
 module.exports = cameraExport;
