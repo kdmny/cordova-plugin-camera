@@ -130,9 +130,6 @@ static NSString* toBase64(NSData* data) {
 
 - (void)takePicture:(CDVInvokedUrlCommand*)command
 {
-    if(self.pickerController != NULL){
-        [self imagePickerControllerDidCancel:self.pickerController];
-    }
 
     // NSString* callbackId = command.callbackId;
     // NSArray* arguments = command.arguments;
@@ -140,6 +137,16 @@ static NSString* toBase64(NSData* data) {
     self.hasPendingOperation = YES;
     
     __weak CDVCamera* weakSelf = self;
+
+    // if(self.pickerController != NULL){
+    //     //using the camera, take the snap
+    //     if(sourceType == UIImagePickerControllerSourceTypeCamera){
+    //         [self.pickerController takePicture];
+    //     } else{
+    //         //shut it down!
+    //         [self imagePickerControllerDidCancel:self.pickerController];
+    //     }
+    // }
 
     [self.commandDelegate runInBackground:^{
         
@@ -381,6 +388,29 @@ static NSString* toBase64(NSData* data) {
         } else {
             scaledImage = [image imageByScalingNotCroppingForSize:options.targetSize];
         }
+        scaledWidth = width * scaleFactor;
+        scaledHeight = height * scaleFactor;
+
+        // center the image
+        //if (widthFactor > heightFactor) {
+        //    thumbnailPoint.y = (targetHeight - scaledHeight) * 0.5;
+        //} else if (widthFactor < heightFactor) {
+        //    thumbnailPoint.x = (targetWidth - scaledWidth) * 0.5;
+        //}
+    }
+
+    UIGraphicsBeginImageContext(targetSize); // this will crop
+
+    CGRect thumbnailRect = CGRectZero;
+    thumbnailRect.origin = thumbnailPoint;
+    thumbnailRect.size.width = scaledWidth;
+    thumbnailRect.size.height = scaledHeight;
+
+    [sourceImage drawInRect:thumbnailRect];
+
+    newImage = UIGraphicsGetImageFromCurrentImageContext();
+    if (newImage == nil) {
+        NSLog(@"could not scale image");
     }
     
     return (scaledImage == nil ? image : scaledImage);
