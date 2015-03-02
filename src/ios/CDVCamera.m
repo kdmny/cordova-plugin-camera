@@ -5,7 +5,7 @@
  regarding copyright ownership.  The ASF licenses this file
  to you under the Apache License, Version 2.0 (the
  "License"); you may not use this file except in compliance
- with the License.  You may obtain a copy of the License at
+ with the License.  You may obtain a/Users/kalemcnaney copy of the License at
 
  http://www.apache.org/licenses/LICENSE-2.0
 
@@ -16,6 +16,9 @@
  specific language governing permissions and limitations
  under the License.
  */
+#define SYSTEM_VERSION_GREATER_THAN_OR_EQUAL_TO(v) ([[[UIDevice currentDevice] systemVersion] compare:v options:NSNumericSearch] != NSOrderedAscending)
+#define IS_IOS7 SYSTEM_VERSION_GREATER_THAN_OR_EQUAL_TO(@"7.0")
+#define IS_IOS8 SYSTEM_VERSION_GREATER_THAN_OR_EQUAL_TO(@"8.0")
 
 #import "CDVCamera.h"
 #import "CDVJpegHeaderWriter.h"
@@ -162,7 +165,7 @@ static NSString* toBase64(NSData* data) {
             [weakSelf.commandDelegate sendPluginResult:result callbackId:command.callbackId];
             return;
         }
-        
+
         // If a popover is already open, close it; we only want one at a time.
         if (([[weakSelf pickerController] pickerPopoverController] != nil) && [[[weakSelf pickerController] pickerPopoverController] isPopoverVisible]) {
             [[[weakSelf pickerController] pickerPopoverController] dismissPopoverAnimated:YES];
@@ -190,9 +193,12 @@ static NSString* toBase64(NSData* data) {
             animate = NO;
             self.viewController.modalPresentationStyle = UIModalPresentationCurrentContext;
 
+        if( IS_IOS8 ){
             [weakSelf.viewController presentViewController:cameraPicker animated:YES completion:^{
                 weakSelf.hasPendingOperation = NO;
             }];
+        } else {
+            [self.viewController presentViewController:cameraPicker animated:animate completion:nil];
         }
     }];
 }
