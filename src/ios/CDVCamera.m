@@ -59,7 +59,7 @@ static NSString* toBase64(NSData* data) {
     
     NSNumber* targetWidth = [command argumentAtIndex:3 withDefault:nil];
     NSNumber* targetHeight = [command argumentAtIndex:4 withDefault:nil];
-    pictureOptions.targetSize = CGSizeMake(0, 0);
+    pictureOptions.targetSize = CGSizeMake(640, 640);
     if ((targetWidth != nil) && (targetHeight != nil)) {
         pictureOptions.targetSize = CGSizeMake([targetWidth floatValue], [targetHeight floatValue]);
     }
@@ -152,11 +152,11 @@ static NSString* toBase64(NSData* data) {
     // }
 
     [self.commandDelegate runInBackground:^{
-        
+        BOOL animate = YES;
         CDVPictureOptions* pictureOptions = [CDVPictureOptions createFromTakePictureArguments:command];
         pictureOptions.popoverSupported = [self popoverSupported];
         pictureOptions.usesGeolocation = [self usesGeolocation];
-        pictureOptions.cropToSize = NO;
+        pictureOptions.cropToSize = YES;
         
         BOOL hasCamera = [UIImagePickerController isSourceTypeAvailable:pictureOptions.sourceType];
         if (!hasCamera) {
@@ -188,17 +188,20 @@ static NSString* toBase64(NSData* data) {
             [weakSelf displayPopover:pictureOptions.popoverOptions];
             weakSelf.hasPendingOperation = NO;
         } else {
-            cameraPicker.showsCameraControls = NO;
+            cameraPicker.showsCameraControls = YES;
             cameraPicker.view.backgroundColor = [UIColor clearColor];
             animate = NO;
             self.viewController.modalPresentationStyle = UIModalPresentationCurrentContext;
 
-        if( IS_IOS8 ){
+//            if( IS_IOS8 ){
+//                
+//                //cameraPicker.modalPresentationStyle = UIModalPresentationOverCurrentContext;
+//                [weakSelf.viewController.view addSubview:cameraPicker.view];
+//
+//            } else {
             [weakSelf.viewController presentViewController:cameraPicker animated:YES completion:^{
                 weakSelf.hasPendingOperation = NO;
             }];
-        } else {
-            [self.viewController presentViewController:cameraPicker animated:animate completion:nil];
         }
     }];
 }
@@ -334,7 +337,7 @@ static NSString* toBase64(NSData* data) {
                         self.metadata = [[NSMutableDictionary alloc] init];
                         
                         NSMutableDictionary* EXIFDictionary = [[controllerMetadata objectForKey:(NSString*)kCGImagePropertyExifDictionary]mutableCopy];
-                        if (EXIFDictionary)	{
+                        if (EXIFDictionary) {
                             [self.metadata setObject:EXIFDictionary forKey:(NSString*)kCGImagePropertyExifDictionary];
                         }
                         
@@ -371,6 +374,56 @@ static NSString* toBase64(NSData* data) {
     return filePath;
 }
 
+//- (UIImage*)retrieveImage:(NSDictionary*)info options:(CDVPictureOptions*)options
+//{
+//    // get the image
+//    UIImage* image = nil;
+//    if (options.allowsEditing && [info objectForKey:UIImagePickerControllerEditedImage]) {
+//        image = [info objectForKey:UIImagePickerControllerEditedImage];
+//    } else {
+//        image = [info objectForKey:UIImagePickerControllerOriginalImage];
+//    }
+//    
+//    if (options.correctOrientation) {
+//        image = [image imageCorrectedForCaptureOrientation];
+//    }
+//    
+//    UIImage* scaledImage = nil;
+//    
+//    if ((options.targetSize.width > 0) && (options.targetSize.height > 0)) {
+//        // if cropToSize, resize image and crop to target size, otherwise resize to fit target without cropping
+//        if (options.cropToSize) {
+//            scaledImage = [image imageByScalingAndCroppingForSize:options.targetSize];
+//        } else {
+//            scaledImage = [image imageByScalingNotCroppingForSize:options.targetSize];
+//        }
+//        scaledWidth = width * scaleFactor;
+//        scaledHeight = height * scaleFactor;
+//
+//        // center the image
+//        //if (widthFactor > heightFactor) {
+//        //    thumbnailPoint.y = (targetHeight - scaledHeight) * 0.5;
+//        //} else if (widthFactor < heightFactor) {
+//        //    thumbnailPoint.x = (targetWidth - scaledWidth) * 0.5;
+//        //}
+//    }
+//
+//    UIGraphicsBeginImageContext(targetSize); // this will crop
+//
+//    CGRect thumbnailRect = CGRectZero;
+//    thumbnailRect.origin = thumbnailPoint;
+//    thumbnailRect.size.width = scaledWidth;
+//    thumbnailRect.size.height = scaledHeight;
+//
+//    [sourceImage drawInRect:thumbnailRect];
+//
+//    newImage = UIGraphicsGetImageFromCurrentImageContext();
+//    if (newImage == nil) {
+//        NSLog(@"could not scale image");
+//    }
+//    
+//    return (scaledImage == nil ? image : scaledImage);
+//}
 - (UIImage*)retrieveImage:(NSDictionary*)info options:(CDVPictureOptions*)options
 {
     // get the image
@@ -386,7 +439,6 @@ static NSString* toBase64(NSData* data) {
     }
     
     UIImage* scaledImage = nil;
-    
     if ((options.targetSize.width > 0) && (options.targetSize.height > 0)) {
         // if cropToSize, resize image and crop to target size, otherwise resize to fit target without cropping
         if (options.cropToSize) {
@@ -394,29 +446,6 @@ static NSString* toBase64(NSData* data) {
         } else {
             scaledImage = [image imageByScalingNotCroppingForSize:options.targetSize];
         }
-        scaledWidth = width * scaleFactor;
-        scaledHeight = height * scaleFactor;
-
-        // center the image
-        //if (widthFactor > heightFactor) {
-        //    thumbnailPoint.y = (targetHeight - scaledHeight) * 0.5;
-        //} else if (widthFactor < heightFactor) {
-        //    thumbnailPoint.x = (targetWidth - scaledWidth) * 0.5;
-        //}
-    }
-
-    UIGraphicsBeginImageContext(targetSize); // this will crop
-
-    CGRect thumbnailRect = CGRectZero;
-    thumbnailRect.origin = thumbnailPoint;
-    thumbnailRect.size.width = scaledWidth;
-    thumbnailRect.size.height = scaledHeight;
-
-    [sourceImage drawInRect:thumbnailRect];
-
-    newImage = UIGraphicsGetImageFromCurrentImageContext();
-    if (newImage == nil) {
-        NSLog(@"could not scale image");
     }
     
     return (scaledImage == nil ? image : scaledImage);
@@ -549,15 +578,15 @@ static NSString* toBase64(NSData* data) {
 
 - (CLLocationManager*)locationManager
 {
-	if (locationManager != nil) {
-		return locationManager;
-	}
+    if (locationManager != nil) {
+        return locationManager;
+    }
     
-	locationManager = [[CLLocationManager alloc] init];
-	[locationManager setDesiredAccuracy:kCLLocationAccuracyNearestTenMeters];
-	[locationManager setDelegate:self];
+    locationManager = [[CLLocationManager alloc] init];
+    [locationManager setDesiredAccuracy:kCLLocationAccuracyNearestTenMeters];
+    [locationManager setDelegate:self];
     
-	return locationManager;
+    return locationManager;
 }
 
 - (void)locationManager:(CLLocationManager*)manager didUpdateToLocation:(CLLocation*)newLocation fromLocation:(CLLocation*)oldLocation
@@ -716,7 +745,7 @@ static NSString* toBase64(NSData* data) {
     CDVCameraPicker* cameraPicker = [[CDVCameraPicker alloc] init];
     cameraPicker.pictureOptions = pictureOptions;
     cameraPicker.sourceType = pictureOptions.sourceType;
-    cameraPicker.allowsEditing = pictureOptions.allowsEditing;
+    cameraPicker.allowsEditing = YES; //pictureOptions.allowsEditing;
     
     if (cameraPicker.sourceType == UIImagePickerControllerSourceTypeCamera) {
         // We only allow taking pictures (no video) in this API.
